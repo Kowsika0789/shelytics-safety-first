@@ -1,10 +1,33 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Phone, X } from 'lucide-react';
-import { useSOS } from '@/hooks/useSOS';
+import { X } from 'lucide-react';
+import { useSOS } from '@/contexts/SOSContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from '@/contexts/LocationContext';
+import { toast } from '@/hooks/use-toast';
 
 const SOSButton: React.FC = () => {
   const { isActive, triggerSOS, cancelSOS } = useSOS();
+  const { user } = useAuth();
+  const { location, currentRiskLevel } = useLocation();
+
+  const handleTriggerSOS = async () => {
+    if (!user || !location) {
+      toast({
+        title: 'Error',
+        description: 'Unable to trigger SOS. Please ensure location is enabled.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    await triggerSOS({
+      userId: user.id,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      riskLevel: currentRiskLevel
+    });
+  };
 
   return (
     <div className="relative flex items-center justify-center">
@@ -30,7 +53,7 @@ const SOSButton: React.FC = () => {
 
       {/* Main SOS Button */}
       <motion.button
-        onClick={isActive ? cancelSOS : triggerSOS}
+        onClick={isActive ? cancelSOS : handleTriggerSOS}
         className={`sos-button ${isActive ? 'w-20 h-20' : 'w-20 h-20'}`}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -47,9 +70,7 @@ const SOSButton: React.FC = () => {
           {isActive ? (
             <X className="w-8 h-8" />
           ) : (
-            <>
-              <span className="text-xl font-bold tracking-wide">SOS</span>
-            </>
+            <span className="text-xl font-bold tracking-wide">SOS</span>
           )}
         </div>
       </motion.button>
