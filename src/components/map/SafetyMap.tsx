@@ -4,6 +4,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useLocation } from '@/contexts/LocationContext';
 import { RiskZone } from '@/types/database';
+import { MapPin, Loader2, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // Fix for default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -79,15 +81,68 @@ interface SafetyMapProps {
 }
 
 const SafetyMap: React.FC<SafetyMapProps> = ({ className = '', height = '100%' }) => {
-  const { location, riskZones } = useLocation();
+  const { location, loading, error, riskZones, permissionGranted, requestPermission, startTracking } = useLocation();
   const userIcon = useRef(createUserIcon());
   
-  // Default location (New York) if user location not available
-  const defaultLat = 40.7128;
-  const defaultLng = -74.0060;
-  
-  const lat = location?.latitude ?? defaultLat;
-  const lng = location?.longitude ?? defaultLng;
+  const lat = location?.latitude ?? 0;
+  const lng = location?.longitude ?? 0;
+
+  const handleEnableLocation = async () => {
+    const granted = await requestPermission();
+    if (granted) {
+      startTracking();
+    }
+  };
+
+  // Show permission prompt if not granted
+  if (!permissionGranted) {
+    return (
+      <div className={`map-container ${className} flex items-center justify-center bg-muted/50`} style={{ height }}>
+        <div className="text-center p-6 max-w-sm">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <MapPin className="w-8 h-8 text-primary" />
+          </div>
+          <h3 className="font-semibold text-foreground mb-2">Enable Location Access</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            SHElytics needs your location to show nearby risk zones and keep you safe.
+          </p>
+          <Button onClick={handleEnableLocation} className="w-full">
+            Enable Location
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while getting location
+  if (loading || !location) {
+    return (
+      <div className={`map-container ${className} flex items-center justify-center bg-muted/50`} style={{ height }}>
+        <div className="text-center p-6">
+          <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto mb-4" />
+          <p className="text-sm text-muted-foreground">Getting your location...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className={`map-container ${className} flex items-center justify-center bg-muted/50`} style={{ height }}>
+        <div className="text-center p-6 max-w-sm">
+          <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-destructive" />
+          </div>
+          <h3 className="font-semibold text-foreground mb-2">Location Error</h3>
+          <p className="text-sm text-muted-foreground mb-4">{error}</p>
+          <Button variant="outline" onClick={handleEnableLocation}>
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`map-container ${className}`} style={{ height }}>
@@ -132,21 +187,17 @@ const SafetyMap: React.FC<SafetyMapProps> = ({ className = '', height = '100%' }
         ))}
         
         {/* User Location Marker */}
-        {location && (
-          <>
-            <Marker position={[lat, lng]} icon={userIcon.current}>
-              <Popup>
-                <div className="p-2 text-center">
-                  <p className="font-semibold text-primary">Your Location</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {location.speed ? `Speed: ${(location.speed * 3.6).toFixed(1)} km/h` : 'Stationary'}
-                  </p>
-                </div>
-              </Popup>
-            </Marker>
-            <MapUpdater latitude={lat} longitude={lng} />
-          </>
-        )}
+        <Marker position={[lat, lng]} icon={userIcon.current}>
+          <Popup>
+            <div className="p-2 text-center">
+              <p className="font-semibold text-primary">Your Location</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {location.speed ? `Speed: ${(location.speed * 3.6).toFixed(1)} km/h` : 'Stationary'}
+              </p>
+            </div>
+          </Popup>
+        </Marker>
+        <MapUpdater latitude={lat} longitude={lng} />
       </MapContainer>
     </div>
   );
