@@ -1,14 +1,19 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useLocation } from '@/contexts/LocationContext';
 import { toast } from '@/hooks/use-toast';
+
+interface TriggerSOSParams {
+  userId: string;
+  latitude: number;
+  longitude: number;
+  riskLevel: string;
+}
 
 interface SOSContextType {
   isActive: boolean;
   showFakeCall: boolean;
   isRecording: boolean;
-  triggerSOS: () => Promise<void>;
+  triggerSOS: (params: TriggerSOSParams) => Promise<void>;
   cancelSOS: () => void;
   acceptFakeCall: () => void;
   declineFakeCall: () => void;
@@ -26,37 +31,26 @@ export const useSOS = () => {
 };
 
 export const SOSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
-  const { location, currentRiskLevel } = useLocation();
   const [isActive, setIsActive] = useState(false);
   const [showFakeCall, setShowFakeCall] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
 
-  const triggerSOS = useCallback(async () => {
-    if (!user || !location) {
-      toast({
-        title: 'Error',
-        description: 'Unable to trigger SOS. Please ensure location is enabled.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
+  const triggerSOS = useCallback(async (params: TriggerSOSParams) => {
+    const { userId, latitude, longitude, riskLevel } = params;
+    
     setIsActive(true);
 
     // Create incident record
-    const { data: incident, error } = await supabase
+    const { error } = await supabase
       .from('incidents')
       .insert({
-        user_id: user.id,
-        alert_type: 'sos',
-        latitude: location.latitude,
-        longitude: location.longitude,
-        risk_level: currentRiskLevel,
+        user_id: userId,
+        alert_type: 'sos' as const,
+        latitude,
+        longitude,
+        risk_level: riskLevel as 'safe' | 'at_risk' | 'emergency',
         description: 'SOS triggered by user'
-      })
-      .select()
-      .single();
+      });
 
     if (error) {
       toast({
@@ -70,7 +64,7 @@ export const SOSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Create notification for the user
     await supabase.from('notifications').insert({
-      user_id: user.id,
+      user_id: userId,
       title: 'SOS Alert Sent',
       message: 'Emergency contacts and nearby police have been notified.',
       type: 'emergency'
@@ -86,7 +80,7 @@ export const SOSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setShowFakeCall(true);
     }, 2000);
 
-  }, [user, location, currentRiskLevel]);
+  }, []);
 
   const cancelSOS = useCallback(() => {
     setIsActive(false);
@@ -98,7 +92,6 @@ export const SOSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setShowFakeCall(false);
     setIsRecording(true);
     
-    // Start recording simulation
     toast({
       title: '🎙️ Recording Started',
       description: 'Audio is being recorded and will be sent to emergency contacts.',

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, PhoneOff, User } from 'lucide-react';
-import { useSOS } from '@/hooks/useSOS';
+import { useSOS } from '@/contexts/SOSContext';
 
 const FakeCallModal: React.FC = () => {
   const { showFakeCall, acceptFakeCall, declineFakeCall } = useSOS();
