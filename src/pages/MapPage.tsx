@@ -1,18 +1,23 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import SafetyMap from '@/components/map/SafetyMap';
 import BottomNavigation from '@/components/navigation/BottomNavigation';
 import SOSButton from '@/components/sos/SOSButton';
 import FakeCallModal from '@/components/sos/FakeCallModal';
+import SuggestZoneModal from '@/components/zones/SuggestZoneModal';
+import MySuggestionsList from '@/components/zones/MySuggestionsList';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from '@/contexts/LocationContext';
-import { Shield, MapPin, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Shield, MapPin, AlertTriangle, AlertCircle, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 
 const MapPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { riskZones, currentRiskLevel } = useLocation();
+  const [showSuggestModal, setShowSuggestModal] = useState(false);
+  const [showMySuggestions, setShowMySuggestions] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -38,6 +43,7 @@ const MapPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       <FakeCallModal />
+      <SuggestZoneModal isOpen={showSuggestModal} onClose={() => setShowSuggestModal(false)} />
 
       {/* Header */}
       <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b border-border px-4 py-3 pt-safe">
@@ -48,13 +54,24 @@ const MapPage: React.FC = () => {
               Risk zones in your area
             </p>
           </div>
-          <div className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-            currentRiskLevel === 'safe' ? 'bg-safe/10 text-safe' :
-            currentRiskLevel === 'at_risk' ? 'bg-risk/10 text-risk' :
-            'bg-emergency/10 text-emergency'
-          }`}>
-            {currentRiskLevel === 'safe' ? 'Safe Zone' :
-             currentRiskLevel === 'at_risk' ? 'Caution' : 'High Risk'}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSuggestModal(true)}
+              className="gap-1"
+            >
+              <Plus className="w-4 h-4" />
+              Report Zone
+            </Button>
+            <div className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+              currentRiskLevel === 'safe' ? 'bg-safe/10 text-safe' :
+              currentRiskLevel === 'at_risk' ? 'bg-risk/10 text-risk' :
+              'bg-emergency/10 text-emergency'
+            }`}>
+              {currentRiskLevel === 'safe' ? 'Safe Zone' :
+               currentRiskLevel === 'at_risk' ? 'Caution' : 'High Risk'}
+            </div>
           </div>
         </div>
       </header>
@@ -121,6 +138,31 @@ const MapPage: React.FC = () => {
             </motion.div>
           ))}
         </div>
+      </div>
+
+      {/* My Suggestions Section */}
+      <div className="px-4 pb-4">
+        <button
+          onClick={() => setShowMySuggestions(!showMySuggestions)}
+          className="w-full flex items-center justify-between p-3 rounded-xl bg-card border border-border"
+        >
+          <span className="text-sm font-semibold text-foreground">My Zone Suggestions</span>
+          {showMySuggestions ? (
+            <ChevronUp className="w-4 h-4 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          )}
+        </button>
+        {showMySuggestions && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="mt-3"
+          >
+            <MySuggestionsList />
+          </motion.div>
+        )}
       </div>
 
       {/* Floating SOS Button */}

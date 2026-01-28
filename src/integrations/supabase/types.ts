@@ -314,6 +314,51 @@ export type Database = {
         }
         Relationships: []
       }
+      zone_suggestions: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          description: string | null
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+          radius_meters: number
+          status: string
+          suggested_risk_level: Database["public"]["Enums"]["risk_level"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          latitude: number
+          longitude: number
+          name: string
+          radius_meters?: number
+          status?: string
+          suggested_risk_level?: Database["public"]["Enums"]["risk_level"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          name?: string
+          radius_meters?: number
+          status?: string
+          suggested_risk_level?: Database["public"]["Enums"]["risk_level"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
