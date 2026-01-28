@@ -15,7 +15,7 @@ import { Shield, MapPin, AlertTriangle, AlertCircle, Plus, ChevronDown, ChevronU
 const MapPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { riskZones, currentRiskLevel } = useLocation();
+  const { riskZones, currentRiskLevel, permissionGranted, requestPermission, startTracking } = useLocation();
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [showMySuggestions, setShowMySuggestions] = useState(false);
 
@@ -24,6 +24,21 @@ const MapPage: React.FC = () => {
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
+
+  // Request location permission and start tracking
+  useEffect(() => {
+    const initLocation = async () => {
+      if (!permissionGranted) {
+        const granted = await requestPermission();
+        if (granted) {
+          startTracking();
+        }
+      } else {
+        startTracking();
+      }
+    };
+    initLocation();
+  }, [permissionGranted, requestPermission, startTracking]);
 
   // Count risk zones by level
   const zoneCounts = {
